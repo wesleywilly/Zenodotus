@@ -29,12 +29,26 @@ public class Zenodotus {
      */
     public JSONArray getCategoriesList() {
         JSONArray result = new JSONArray();
-        Document doc;
+        Document doc = null;
         try {
 
-            //Carregando a página
-            doc = Jsoup.connect(KNOWLEDGE_BROWSER_URL + "ontology.php?mode=cat").get();
+            boolean connected = false;
+            boolean conected = false;
+            while (!conected) {
+                try {
 
+                    //Carregando a página
+                    doc = Jsoup.connect(KNOWLEDGE_BROWSER_URL + "ontology.php?mode=cat").get();
+                    conected = true;
+
+                } catch (Exception e) {
+
+                    System.out.println("[" + Thread.currentThread().getId() + "] No connection to get categories!");
+                    e.printStackTrace();
+                    Thread.sleep(3000);
+                }
+
+            }
             //Primeira seleção de elementos pela tag "li"    
             Elements elements = doc.getElementsByTag("li");
 
@@ -94,11 +108,28 @@ public class Zenodotus {
         if (match) {
 
             //Carregar página da categoria
-            Document doc;
+            Document doc = null;
             try {
                 //TODO: Passar url por arquivo de setup
 
-                doc = Jsoup.connect(jCategory.get(KB.LINK).toString()).timeout(30000).get();
+                boolean conected = false;
+            while(!conected){
+            try{
+                
+            doc = Jsoup.connect(jCategory.get(KB.LINK).toString()).timeout(30000).get();
+            conected = true;
+            
+            }catch(Exception e){
+                
+                System.out.println("[ZENODOTUS] No connection! trying again in 3 seconds...");
+                e.printStackTrace();
+                Thread.sleep(3000);
+            }
+            
+            }
+                
+                
+                
 
                 //System.out.println(doc);
                 //Coletar dados e inserir em um JSONObject
@@ -233,42 +264,57 @@ public class Zenodotus {
                 /**
                  * Carregar Instancia
                  */
-                Document doc;
-
+                Document doc = null;
                 try {
-
-                    doc = Jsoup.connect(jInstance.get(KB.LINK).toString()).get();
+                    
+                    boolean conected = false;
+            while(!conected){
+            try{
+                
+            doc = Jsoup.connect(jInstance.get(KB.LINK).toString()).get();
+            conected = true;
+            
+            }catch(Exception e){
+                
+                System.out.println("[ZENODOTUS] No connection! trying again in 3 seconds...");
+                e.printStackTrace();
+                Thread.sleep(3000);
+            }
+            
+            }
+                    
+                    
                     /**
                      * Buscando String Literais
                      */
 
                     Elements eParagrafs = doc.getElementsByTag("p");
                     Element eLiteralStringParagraf = eParagrafs.first();
-                    
-                    JSONArray jaLiteralStrings = new JSONArray();
-                    if(eLiteralStringParagraf.getElementsByTag("a").size()>0){
+
+                    if (eParagrafs.first() != null) {
+
+                        JSONArray jaLiteralStrings = new JSONArray();
+
                         Elements eAs = eLiteralStringParagraf.getElementsByTag("a");
-                    
 
-                    
+                        for (int ia = 0; ia < eAs.size(); ia++) {
 
-                    for (int ia = 0; ia < eAs.size(); ia++) {
+                            String sLSValue = eAs.get(ia).text();
 
-                        String sLSValue = eAs.get(ia).text();
+                            Elements hrefs = eAs.get(ia).getElementsByAttribute("href");
+                            Element href = hrefs.first();
+                            String sLSLink = href.attr("href");
 
-                        Elements hrefs = eAs.get(ia).getElementsByAttribute("href");
-                        Element href = hrefs.first();
-                        String sLSLink = href.attr("href");
+                            JSONObject jLiteralString = new JSONObject();
+                            jLiteralString.put(KB.LINK, sLSLink);
+                            jLiteralString.put(KB.LITERAL_STRING_VALUE, sLSValue);
 
-                        JSONObject jLiteralString = new JSONObject();
-                        jLiteralString.put(KB.LINK, sLSLink);
-                        jLiteralString.put(KB.LITERAL_STRING_VALUE, sLSValue);
+                            jaLiteralStrings.add(jLiteralString);
+                        }
 
-                        jaLiteralStrings.add(jLiteralString);
+                        jInstance.put(KB.INSTANCE_LITERAL_STRINGS, jaLiteralStrings);
+
                     }
-                }
-
-                    jInstance.put(KB.INSTANCE_LITERAL_STRINGS, jaLiteralStrings);
 
                     JSONObject jICategory = new JSONObject();
 
@@ -537,15 +583,18 @@ public class Zenodotus {
                 if (!match) {
                     String instance_name = (String) jInstance.get(KB.INSTANCE_NAME);
                     JSONObject jCompleteInstance = (JSONObject) getCategoryInstance(categoryName, instance_name);
-                    JSONArray literalStrings = (JSONArray) jCompleteInstance.get(KB.INSTANCE_LITERAL_STRINGS);
-                    if (literalStrings.size() > 0) {
-                        for (int ils = 0; ils < literalStrings.size() && !match; ils++) {
-                            JSONObject jliteralString = (JSONObject) literalStrings.get(ils);
-                            String literalString = (String) jliteralString.get(KB.LITERAL_STRING_VALUE);
 
-                            if (literalString.equals(keyword) || (literalString.contains(keyword))) {
-                                results.add(jCompleteInstance);
-                                match = true;
+                    if (jCompleteInstance.containsKey(KB.INSTANCE_LITERAL_STRINGS)) {
+                        JSONArray literalStrings = (JSONArray) jCompleteInstance.get(KB.INSTANCE_LITERAL_STRINGS);
+                        if (literalStrings.size() > 0) {
+                            for (int ils = 0; ils < literalStrings.size() && !match; ils++) {
+                                JSONObject jliteralString = (JSONObject) literalStrings.get(ils);
+                                String literalString = (String) jliteralString.get(KB.LITERAL_STRING_VALUE);
+
+                                if (literalString.equals(keyword) || (literalString.contains(keyword))) {
+                                    results.add(jCompleteInstance);
+                                    match = true;
+                                }
                             }
                         }
                     }
@@ -571,20 +620,37 @@ public class Zenodotus {
         while (ic < jCategories.size()) {
             JSONObject jCategory = (JSONObject) jCategories.get(ic);
             String pred = (String) jCategory.get(KB.CATEGORY_NAME);
+            
+            System.out.println("[SCI] Searching in "+pred+" ("+(ic+1)+" of "+jCategories.size()+")...");
+            int or = results.size();
             results.addAll(searchCategoryInstance(pred, keyword));
+            System.out.println("[SCI] "+(results.size()-or)+" new instances.");
             ic++;
         }
-
+        System.out.println("[SCI] "+results.size()+" instances found.");
         return results;
     }
 
     public JSONArray getRelationsList() {
         JSONArray result = new JSONArray();
-        Document doc;
+        Document doc = null;
         try {
+            boolean conected = false;
+            while (!conected) {
+                try {
 
-            //Carregando a página
-            doc = Jsoup.connect(KNOWLEDGE_BROWSER_URL + "ontology.php?mode=rel").get();
+                    //Carregando a página
+                    doc = Jsoup.connect(KNOWLEDGE_BROWSER_URL + "ontology.php?mode=rel").get();
+                    conected = true;
+
+                } catch (Exception e) {
+
+                    System.out.println("[ZENODOTUS] No connection to get categories! trying again in 3 seconds...");
+                    e.printStackTrace();
+                    Thread.sleep(3000);
+                }
+
+            }
 
             //Primeira seleção de elementos pela tag "li"    
             Elements elements = doc.getElementsByTag("li");
@@ -638,11 +704,25 @@ public class Zenodotus {
         if (match) {
 
             //Carregar página da categoria
-            Document doc;
+            Document doc = null;
             try {
                 //TODO: Passar url por arquivo de setup
+                boolean conected = false;
+                while (!conected) {
+                    try {
 
-                doc = Jsoup.connect(jRelation.get(KB.LINK).toString()).timeout(30000).get();
+                        //Carregando a página   
+                        doc = Jsoup.connect(jRelation.get(KB.LINK).toString()).timeout(30000).get();
+                        conected = true;
+
+                    } catch (Exception e) {
+
+                        System.out.println("[ZENODOTUS] No connection to get relations! trying again in 3 seconds...");
+                        e.printStackTrace();
+                        Thread.sleep(3000);
+                    }
+
+                }
 
                 //Coletar dados e inserir em um JSONObject
                 //Prologo
