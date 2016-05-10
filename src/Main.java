@@ -3,10 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package Main;
 
-import WebParser.Zenodotus;
-import Utilities.FileUtilities;
+
+import webCrawler.Zenodotus;
+import utilities.FileUtilities;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -16,9 +16,7 @@ import org.json.simple.JSONObject;
  */
 public class Main {
 
-    /**
-     * @param args the command line arguments
-     */
+    
     public static final String GET_CATEGORIES_LIST = "-gcl";
     public static final String GET_RELATIONS_LIST = "-grl";
 

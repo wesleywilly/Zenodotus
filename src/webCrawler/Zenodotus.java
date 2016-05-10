@@ -3,9 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package WebParser;
+package webCrawler;
 
-import NeLL.KB;
+import nell.KB;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -23,9 +23,9 @@ public class Zenodotus {
     public static final String KNOWLEDGE_BROWSER_URL = "http://rtw.ml.cmu.edu/rtw/kbbrowser/";
 
     /**
-     * Lista "todas" as categorias da base do NELL em um JSONArray
+     * Busca "todas" as categorias da base do NELL
      *
-     * @return
+     * @return Uma lista com as categorias encontradas
      */
     public JSONArray getCategoriesList() {
         JSONArray result = new JSONArray();
@@ -81,10 +81,10 @@ public class Zenodotus {
     }
 
     /**
-     * Retorna dados de uma categoria em um JSONObject
+     * Busca uma categoria específica dado predicato
      *
-     * @param pred
-     * @return
+     * @param pred (Nome único gerado automáticamente pela NELL)
+     * @return Retorna dados de uma categoria em um JSONObject
      */
     public JSONObject getCategory(String pred) {
         JSONObject jCategory = new JSONObject();
@@ -186,10 +186,11 @@ public class Zenodotus {
     }
 
     /**
-     * Busca resultados de categorias a partir de uma string de busca
+     * Busca resultados de categorias a partir de uma string de busca.
+     * A Busca realizada é primitiva, o primeiro elemento retornado (posição 0) pode ser o resultado com valor exato. Por isso pode-se repetir nas próximas posições da lista de resultados.
      *
-     * @param keyword
-     * @return
+     * @param keyword (Palavra chave)
+     * @return Lista de categorias com volores exatos ou que tenha a keyword contida no nome da categoria.
      */
     public JSONArray searchCategory(String keyword) {
         JSONArray results = new JSONArray();
