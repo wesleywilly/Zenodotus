@@ -5,7 +5,7 @@
  */
 package webCrawler;
 
-import nell.KB;
+import NeLL.KB;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
