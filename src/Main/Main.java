@@ -183,11 +183,11 @@ public class Main {
                 if (args.length > index) {
                     
                     if (args.length > 2 && !args[2].equals(SAVE)) {
-                        System.out.println("[MAIN] It may take a long time!");
+                        System.out.println("[MAIN] Calling ASKNELL...");
                         x = Zenodotus.searchCategoryInstance(args[1], args[2]);
                         index+=2;
                     } else {
-                        System.out.println("[MAIN] Well, I'll look for it in the whole NeLL's knowledge base! I hope you have something else to do...");
+                        System.out.println("[MAIN] Calling ASKNELL...");
                         x = Zenodotus.searchCategoryInstance(args[1]);
                         index++;
                     }

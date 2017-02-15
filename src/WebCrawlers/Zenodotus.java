@@ -37,7 +37,7 @@ public class Zenodotus {
         try {
 
             boolean connected = false;
-            
+
             while (!connected) {
                 try {
 
@@ -117,23 +117,20 @@ public class Zenodotus {
                 //TODO: Passar url por arquivo de setup
 
                 boolean conected = false;
-            while(!conected){
-            try{
-                
-            doc = Jsoup.connect(jCategory.get(KB.LINK).toString()).timeout(30000).get();
-            conected = true;
-            
-            }catch(Exception e){
-                
-                System.out.println("[ZENODOTUS] No connection! trying again in 3 seconds...");
-                e.printStackTrace();
-                Thread.sleep(3000);
-            }
-            
-            }
-                
-                
-                
+                while (!conected) {
+                    try {
+
+                        doc = Jsoup.connect(jCategory.get(KB.LINK).toString()).timeout(30000).get();
+                        conected = true;
+
+                    } catch (Exception e) {
+
+                        System.out.println("[ZENODOTUS] No connection! trying again in 3 seconds...");
+                        e.printStackTrace();
+                        Thread.sleep(3000);
+                    }
+
+                }
 
                 //System.out.println(doc);
                 //Coletar dados e inserir em um JSONObject
@@ -270,28 +267,26 @@ public class Zenodotus {
                  */
                 Document doc = null;
                 try {
-                    
+
                     boolean conected = false;
-            while(!conected){
-            try{
-                
-            doc = Jsoup.connect(jInstance.get(KB.LINK).toString()).get();
-            conected = true;
-            
-            }catch(Exception e){
-                
-                System.out.println("[ZENODOTUS] No connection! trying again in 3 seconds...");
-                e.printStackTrace();
-                Thread.sleep(3000);
-            }
-            
-            }
-                    
-                    
+                    while (!conected) {
+                        try {
+
+                            doc = Jsoup.connect(jInstance.get(KB.LINK).toString()).get();
+                            conected = true;
+
+                        } catch (Exception e) {
+
+                            System.out.println("[ZENODOTUS] No connection! trying again in 3 seconds...");
+                            e.printStackTrace();
+                            Thread.sleep(3000);
+                        }
+
+                    }
+
                     /**
                      * Buscando String Literais
                      */
-
                     Elements eParagrafs = doc.getElementsByTag("p");
                     Element eLiteralStringParagraf = eParagrafs.first();
 
@@ -550,6 +545,7 @@ public class Zenodotus {
                 /**
                  * Retornar Resultado
                  */
+                System.out.println("[ZENODOTUS] Instance " + instanceName + " found!");
                 return jInstance;
 
             } else {
@@ -565,98 +561,72 @@ public class Zenodotus {
     }
 
     public static JSONArray searchCategoryInstance(String categoryName, String keyword) {
-        JSONArray results = new JSONArray();
+        JSONArray categories_instances = new JSONArray();
 
-        JSONObject jCategory = getCategory(categoryName);
-        if (!jCategory.isEmpty()) {
-            JSONArray jInstances = (JSONArray) jCategory.get(KB.CATEGORY_INSTANCES);
+        Result r = new Result(AskNell.getMLCategories(keyword, categoryName));
 
-            int ii = 0;
-            while (ii < jInstances.size()) {
-                boolean match = false;
-                JSONObject jInstance = (JSONObject) jInstances.get(ii);
-
-                String name = (String) jInstance.get(KB.INSTANCE_NAME);
-
-                if (name.equals(keyword) || (name.contains(keyword))) {
-                    String instance_name = (String) jInstance.get(KB.INSTANCE_NAME);
-
-                    results.add(getCategoryInstance(categoryName, instance_name));
-                    match = true;
-                }
-                if (!match) {
-                    String instance_name = (String) jInstance.get(KB.INSTANCE_NAME);
-                    JSONObject jCompleteInstance = (JSONObject) getCategoryInstance(categoryName, instance_name);
-
-                    if (jCompleteInstance.containsKey(KB.INSTANCE_LITERAL_STRINGS)) {
-                        JSONArray literalStrings = (JSONArray) jCompleteInstance.get(KB.INSTANCE_LITERAL_STRINGS);
-                        if (literalStrings.size() > 0) {
-                            for (int ils = 0; ils < literalStrings.size() && !match; ils++) {
-                                JSONObject jliteralString = (JSONObject) literalStrings.get(ils);
-                                String literalString = (String) jliteralString.get(KB.LITERAL_STRING_VALUE);
-
-                                if (literalString.equals(keyword) || (literalString.contains(keyword))) {
-                                    results.add(jCompleteInstance);
-                                    match = true;
-                                }
-                            }
-                        }
+        if (r.getItems().size() > 0) {
+            for (Item item : r.getItems()) {
+                String instance_name = (String) item.getEnt1();
+                int i = 0;
+                int j = 0;
+                while (j >= 0) {
+                    j = instance_name.indexOf(":", j + 1);
+                    if (j >= 0) {
+                        i = j;
                     }
                 }
+                instance_name = instance_name.substring(i + 1);
 
-                ii++;
+                String category_name = item.getPredicate();
+                System.out.println("[ZENODOTUS] Getting more informations for " + category_name + "...");
+                JSONObject jci = Zenodotus.getCategoryInstance(category_name, instance_name);
+                if (jci != null) {
+                    categories_instances.add(jci);
+                }
+
             }
-
-        } else {
-            System.out.println("[ZENODOTUS] Category " + categoryName + " not found!");
         }
 
-        return results;
+        return categories_instances;
     }
 
     public static JSONArray searchCategoryInstance(String keyword) {
         JSONArray cl = Zenodotus.getCategoriesList();
-        
+
         JSONArray categories_instances = new JSONArray();
-        
-        
-        System.out.println("[ASKNELL] Getting most likely categories...");
-        for(Object category: cl){
-            JSONObject jcategory = (JSONObject) category;
-            String category_name = (String) jcategory.get("category_name");
-            
-            Result r = new Result(AskNell.getMLCategories(keyword,category_name));
-            
-            if(r.getItems().size()>0){
-                for (Item item : r.getItems()) {
-                    String instance_name = (String) item.getEnt1();
-                    int i = 0;
-                    int j = 0;
-                    while(j>=0){
-                        j = instance_name.indexOf(":", j+1);
-                        if (j>=0){
-                            i = j;
-                        }
+
+        System.out.print("[ASKNELL] Getting most likely categories...");
+        Result r = new Result(AskNell.getMLCategories(keyword, "*"));
+
+        if (r.getItems().size() > 0) {
+            System.out.println(" Found!");
+            for (Item item : r.getItems()) {
+                String instance_name = (String) item.getEnt1();
+                int i = 0;
+                int j = 0;
+                while (j >= 0) {
+                    j = instance_name.indexOf(":", j + 1);
+                    if (j >= 0) {
+                        i = j;
                     }
-                    instance_name = instance_name.substring(i+1);
-                    
-                    
-                    category_name = item.getPredicate();
-                    System.out.println("[ZENODOTUS] Getting more informations for "+category_name+"...");
-                    JSONObject jci = Zenodotus.getCategoryInstance(category_name, instance_name);
-                    if(jci != null){
-                        jci.put("category_name", category_name);
-                        categories_instances.add(jci);
-                    }
-                    
                 }
+                instance_name = instance_name.substring(i + 1);
+
+                String category_name = item.getPredicate();
+                System.out.print("[ZENODOTUS] Getting more informations for " + category_name + "...");
+                JSONObject jci = Zenodotus.getCategoryInstance(category_name, instance_name);
+                if (jci != null) {
+                    categories_instances.add(jci);
+                }
+
             }
-            
-            
+        } else {
+            System.out.println(" No most likely category found!");
         }
+
         return categories_instances;
     }
-
 
     public static JSONArray getRelationsList() {
         JSONArray result = new JSONArray();
@@ -756,6 +726,7 @@ public class Zenodotus {
                 Elements ePrologue_r = doc.getElementsByAttributeValue("class", "prologue_r");
                 if (ePrologue_r.size() > 0) {
                     jRelation.put(KB.RELATION_PROLOGUE, ePrologue_r.first().text());
+
                 }
                 //Domain and Range
                 Elements ePrologue_l = doc.getElementsByAttributeValue("class", "prologue_l");
@@ -780,6 +751,82 @@ public class Zenodotus {
                     jRange.put(KB.LINK, sRangeLink);
 
                     jRelation.put(KB.RELATION_RANGE, jRange);
+
+                    //Metadata
+                    
+                    
+                    Document metadata = null;
+                    
+                    boolean ok = false;
+                    while (!ok) {
+                        try {
+                            metadata = Jsoup.connect(KNOWLEDGE_BROWSER_URL+"predmeta.php?id="+pred).get();
+                            ok = true;
+                        } catch (Exception e) {
+                            System.out.println("[ZENODOTUS]Metadata connection error!\n[ZENODOTUS]Trying again...");
+                            try{
+                                Thread.sleep(3000);
+                            }catch(Exception et){
+                                System.out.println("[THREAD]I don't wanna sleep!");
+                            }
+                        }
+                    }
+                    
+                    if(metadata != null){
+                        
+                        
+                        Elements uls = metadata.getElementsByTag("ul");
+                        
+                        String epText = "";
+                        
+                        boolean found = false;
+                        int i = 0;
+                        
+                        while(!found && i<uls.size()){
+                            Element e = uls.get(i);
+                            if(e.text().length()>12 
+                                    && e.text().contains("arg1") 
+                                    && e.text().contains("arg2")
+                                    && e.text().substring(0, 1).equals("\"")){
+                                
+                                epText = e.text();
+                                found = true;
+                                
+                            }
+                            i++;
+                        }
+                        
+                        JSONArray extractionPatterns = new JSONArray();
+                        
+                        boolean end = false;
+                        
+                        int i1 = 1;
+                        int i2;
+                        
+                        while(!end){
+                            i2 = epText.indexOf("\"", i1);
+                            
+                            if(i2>i1 && i2<epText.length()){
+                                String pattern = epText.substring(i1, i2);
+                                if(pattern.length()>4){
+                                    extractionPatterns.add(pattern);
+                                }
+                            i1 = i2+1;
+                            }else{
+                                end = true;
+                            }
+                            
+                        }
+                        
+                        JSONObject jMetadata = new JSONObject();
+                        
+                        jMetadata.put("extractionPatterns", extractionPatterns);
+                        
+                        jRelation.put("metadata", jMetadata);
+                        
+                    }
+                    
+
                 }
 
                 //Instâncias
@@ -869,6 +916,19 @@ public class Zenodotus {
         }
 
         return results;
+    }
+
+    public static String searchPredicateForInstance(String keyword) {
+        String predicate = "";
+
+        JSONArray jinstances = searchCategoryInstance(keyword);
+
+        if (jinstances.size() > 0) {
+            JSONObject jinstance = (JSONObject) jinstances.get(0);
+            predicate = (String) jinstance.get(KB.INSTANCE_NAME);
+        }
+
+        return predicate;
     }
 
 }

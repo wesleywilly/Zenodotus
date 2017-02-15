@@ -5,6 +5,7 @@
  */
 package WebCrawlers;
 
+import java.net.URL;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -56,6 +57,8 @@ public class AskNell {
             try {
                 //Reading page
                 doc = Jsoup.connect(query).get();
+                
+                //doc = Jsoup.parse(new URL(query),30000);
                 connected = true;
 
             } catch (Exception e) {
@@ -65,7 +68,7 @@ public class AskNell {
                     Thread.sleep(3000);
                 } catch (Exception te) {
                     System.out.println("[ASKNELL] Thread Error!");
-                    te.printStackTrace();
+                    //te.printStackTrace();
                 }
 
             }
