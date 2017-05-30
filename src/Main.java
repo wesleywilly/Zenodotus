@@ -5,7 +5,7 @@
  */
 
 
-import webCrawler.Zenodotus;
+import WebCrawlers.Zenodotus;
 import Utilities.FileUtilities;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
