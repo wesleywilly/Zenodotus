@@ -176,6 +176,49 @@ public class Zenodotus {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+            
+            //Metadata
+            Document metadata = null;
+            boolean ok = false;
+            while (!ok) {
+                        try {
+                            metadata = Jsoup.connect(KNOWLEDGE_BROWSER_URL+"predmeta.php?id="+pred).get();
+                            ok = true;
+                        } catch (Exception e) {
+                            System.out.println("[ZENODOTUS]Metadata connection error!\n[ZENODOTUS]Trying again...");
+                            try{
+                                Thread.sleep(3000);
+                            }catch(Exception et){
+                                System.out.println("[THREAD]I don't wanna sleep!");
+                            }
+                        }
+                    }
+            if(metadata != null){
+                
+                Elements lis = metadata.getElementsByTag("li");
+                Element li = lis.get(5);
+                String extractionPatterns = li.text();
+                
+                JSONArray jExtractionPatterns = new JSONArray();
+                
+                String pattern_symbol = "\"";
+                int index_begin= extractionPatterns.indexOf(pattern_symbol);
+                int index_end = extractionPatterns.indexOf(pattern_symbol, index_begin+1);
+                
+                while(index_begin>=0 && index_end>=0){
+                    jExtractionPatterns.add(extractionPatterns.substring(index_begin+1, index_end));
+                    
+                    index_begin = extractionPatterns.indexOf(pattern_symbol, index_end+1);
+                    index_end = extractionPatterns.indexOf(pattern_symbol, index_begin+1);
+                }
+                
+                JSONObject jMetadata = new JSONObject();
+                jMetadata.put("extractionPatterns",jExtractionPatterns);
+                jCategory.put("metadata", jMetadata);
+                
+                
+            }
+            
             //Retornar o resultado
             return jCategory;
 
